@@ -2,7 +2,7 @@ LIBRARY library IEEE;
 USE IEEE.std_logic_1164.ALL;
 USE IEEE.numeric_std.ALL;
 
-ENTITY DecodeStage IS
+ENTITY ID_Stage IS
   PORT (
     -- inputs
     clk : IN STD_LOGIC;
@@ -44,9 +44,9 @@ ENTITY DecodeStage IS
     pcWrite : OUT STD_LOGIC;
     aluOp : OUT STD_LOGIC_VECTOR(2 DOWNTO 0);
   );
-END DecodeStage;
+END ID_Stage;
 
-ARCHITECTURE Behavioral OF DecodeStage IS
+ARCHITECTURE Behavioral OF ID_Stage IS
   -- add components
 
   COMPONENT RegisterFile IS
