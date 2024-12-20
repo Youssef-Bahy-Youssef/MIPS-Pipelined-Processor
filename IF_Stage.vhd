@@ -13,29 +13,32 @@ USE IEEE.numeric_std.ALL;
 
 ENTITY IF_Stage IS
   PORT (
+    -- * Inputs for PrioritySelector
+    isReturn : IN STD_LOGIC;
+    isException : IN STD_LOGIC;
+    isBranch : IN STD_LOGIC;
+    isJump : IN STD_LOGIC;
+
     jumpAddress : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
     branchAddress : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
     returnAddress : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
 
-    -- control signals
-    cause : IN STD_LOGIC;
-    isBranch : IN STD_LOGIC;
-    isJump : IN STD_LOGIC;
-    isReturn : IN STD_LOGIC;
-    isException : IN STD_LOGIC;
-    -- isInterrupt : IN STD_LOGIC; -- signal not input
+    -- * Inputs for Interrupt and Return (RTI) handler
+    ID_inst : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
 
-    -- Flush signals
-    cu_isJump : IN STD_LOGIC;
-    isExp : IN STD_LOGIC;
-    pc_stop : IN STD_LOGIC;
-    branch_flush : IN STD_LOGIC;
-    hdu_flush : IN STD_LOGIC;
-
+    -- * Inputs for Program Counter
     clk : IN STD_LOGIC;
     rst : IN STD_LOGIC;
-    flush : IN STD_LOGIC;
     pcWrite : IN STD_LOGIC;
+
+    -- * Other Inputs
+    cause : IN STD_LOGIC;
+    -- * Inputs for Instruction Memory (NOT FOUND)
+    -- * Inputs for Flush Signal
+    cu_isJump : IN STD_LOGIC;
+    isException : IN STD_LOGIC;
+    branch_flush : IN STD_LOGIC;
+    hdu_flush : IN STD_LOGIC;
 
     -- outputs
     inst : OUT STD_LOGIC_VECTOR(15 DOWNTO 0);
@@ -97,7 +100,7 @@ ARCHITECTURE Behavioral OF IF_Stage IS
   COMPONENT FlushSignal IS
     PORT (
       cu_isJump : IN STD_LOGIC;
-      isExp : IN STD_LOGIC;
+      isException : IN STD_LOGIC;
       pc_stop : IN STD_LOGIC;
       branch_flush : IN STD_LOGIC;
       hdu_flush : IN STD_LOGIC;
@@ -125,39 +128,53 @@ ARCHITECTURE Behavioral OF IF_Stage IS
       int2_rti2_instruction : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
       memory_output : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
 
-      inst_out : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
+      inst_out : OUT STD_LOGIC_VECTOR(15 DOWNTO 0);
     );
   END COMPONENT;
-
+  -- * Signals for Priority Selector
   SIGNAL exceptionAddress : STD_LOGIC_VECTOR(15 DOWNTO 0);
-  SIGNAL emptyStackExceptionAddress : STD_LOGIC_VECTOR(15 DOWNTO 0) := x"0000";
-  SIGNAL invalidMemoryAddress : STD_LOGIC_VECTOR(15 DOWNTO 0) := x"0000";
+  SIGNAL isInterrupt : STD_LOGIC;
+  SIGNAL index : STD_LOGIC_VECTOR(10 DOWNTO 0);
+  SIGNAL interruptAddress : STD_LOGIC_VECTOR(15 DOWNTO 0);
 
-  SIGNAL pcIn : STD_LOGIC_VECTOR(15 DOWNTO 0);
+  -- * Signals for Interrupt and Return (RTI) handler
+  SIGNAL isInt1OrRti1 : STD_LOGIC;
+  SIGNAL isInt2OrRti2 : STD_LOGIC;
+  SIGNAL ID_Toggled_inst : STD_LOGIC_VECTOR(15 DOWNTO 0);
+
+  -- * Signals for Program Counter
   SIGNAL pcOut : STD_LOGIC_VECTOR(15 DOWNTO 0);
   SIGNAL selectedAddress : STD_LOGIC_VECTOR(15 DOWNTO 0);
 
-  -- for interrupts
-  SIGNAL isInterrupt : STD_LOGIC;
-  SIGNAL index : STD_LOGIC_VECTOR(1 DOWNTO 0);
-  SIGNAL interruptAddress : STD_LOGIC_VECTOR(15 DOWNTO 0);
-  SIGNAL interruptBaseAddress : STD_LOGIC_VECTOR(15 DOWNTO 0) := x"0000"; -- IM[6]
-  SIGNAL INT2Opcode : STD_LOGIC_VECTOR(4 DOWNTO 0) := "00000"
+  -- * Signals for Instruction Memory
+  SIGNAL IM_0 : STD_LOGIC_VECTOR(15 DOWNTO 0);
+  SIGNAL IM_2 : STD_LOGIC_VECTOR(15 DOWNTO 0);
+  SIGNAL IM_4 : STD_LOGIC_VECTOR(15 DOWNTO 0);
+  SIGNAL IM_6 : STD_LOGIC_VECTOR(15 DOWNTO 0);
+  SIGNAL IM_Out : STD_LOGIC_VECTOR(15 DOWNTO 0);
+
+  -- * Signals for Flush Signal
+  SIGNAL pc_stop : STD_LOGIC;
+  SIGNAL flush : STD_LOGIC;
 
 BEGIN
   -- concurrent assignments
+  -- * Priority Selector
   exceptionAddress <=
-    emptyStackExceptionAddress WHEN cause = '0' ELSE
-    invalidMemoryAddress;
+    IM_2 WHEN cause = '1' ELSE
+    IM_4;
   nextSequentialAddress <= pcOut + 1;
-  pc <= pcOut;
+  interruptAddress <= IM_6 + index;
+  index <= inst(10 DOWNTO 0);
+  isInterrupt <= isInt2OrRti2;
+  -- * Program Counter
+  -- * Interrupt and Return (RTI) handler
+  -- * Instruction Memory
+  -- * Flush Signal
+  pc_stop <= NOT pcWrite;
+  ID_Toggled_inst <= ID_inst(15 DOWNTO 1) & NOT ID_inst(0);
 
-  -- interrupt signals
-  isInterrupt <= '1' WHEN inst(15 DOWNTO 11) = INT2Opcode ELSE
-    '0';
-  index <= inst(1 DOWNTO 0);
-  interruptAddress <= interruptBaseAddress + index;
-
+  -- Priority Selector Instantiation
   PrioritySelector_inst : PrioritySelector
   PORT MAP(
     -- Control signals
@@ -169,7 +186,7 @@ BEGIN
 
     -- Input addresses
     jumpAddress => jumpAddress,
-    nextSequentialAddress => nextSequentialAddress,
+    nextSequentialAddress => pcOut,
     branchAddress => branchAddress,
     exceptionAddress => exceptionAddress,
     returnAddress => returnAddress,
@@ -179,20 +196,61 @@ BEGIN
     selectedAddress => selectedAddress
   );
 
+  -- Program Counter Instantiation
   ProgramCounter_inst : ProgramCounter
   PORT MAP(
     clk => clk,
     rst => rst,
     pcWrite => pcWrite,
-    pcIn => selectedAddress, -- Input from PrioritySelector
-    isInterrupt => isInterrupt;
-    pcOut => pcOut -- Output to InstructionMemory
+    isInt1OrRti1 => isInt1OrRti1,
+    pcIn => selectedAddress,
+
+    pcOut => pcOut
   );
+
+  -- Instruction Memory Instantiation
   InstructionMemory_inst : InstructionMemory
   PORT MAP(
+    pc => pcOut,
+
+    IM_0 => IM_0,
+    IM_2 => IM_2,
+    IM_4 => IM_4,
+    IM_6 => IM_6,
+    inst => IM_Out
+  );
+
+  -- Flush Signal Instantiation
+  FlushSignal_inst : FlushSignal
+  PORT MAP(
+    cu_isJump => cu_isJump,
+    isException => isException,
+    pc_stop => pc_stop,
+    branch_flush => branch_flush,
+    hdu_flush => hdu_flush,
+
+    out_flush => flush
+  );
+
+  -- Interrupt and Return (RTI) Handler Instantiation
+  IntAndRetHandler_inst : IntAndRetHandler
+  PORT MAP(
+    inst => ID_inst,
+
+    out1 => isInt1OrRti1,
+    out2 => isInt2OrRti2,
+    newInst => ID_Toggled_inst
+  );
+
+  -- Output Mux Instantiation
+  OutputMux_inst : OutputMux
+  PORT MAP(
     flush => flush,
-    pc => pcOut, -- Input from ProgramCounter
-    inst => inst -- Output: Instruction fetched
+    isInt1OrRti1 => isInt1OrRti1,
+    int2_rti2_instruction => ID_Toggled_inst,
+    memory_output => IM_Out,
+
+    inst_out => inst
   );
 
 END Behavioral;

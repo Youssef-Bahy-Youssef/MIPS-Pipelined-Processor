@@ -1,4 +1,4 @@
-LIBRARY library IEEE;
+LIBRARY IEEE;
 USE IEEE.std_logic_1164.ALL;
 USE IEEE.numeric_std.ALL;
 
@@ -66,6 +66,7 @@ ARCHITECTURE Behavioral OF ID_Stage IS
   COMPONENT ControlUnit IS
     PORT (
       opcode : IN STD_LOGIC_VECTOR(4 DOWNTO 0)
+      lastBit : IN STD_LOGIC;
 
       memRead : OUT STD_LOGIC;
       memWrite : OUT STD_LOGIC;
@@ -78,6 +79,13 @@ ARCHITECTURE Behavioral OF ID_Stage IS
       isCall : OUT STD_LOGIC;
       pcWrite : OUT STD_LOGIC;
 
+      isJz : OUT STD_LOGIC;
+      isJn : OUT STD_LOGIC;
+      isJc : OUT STD_LOGIC;
+      isRetOrRti2 : OUT STD_LOGIC;
+      isRet : OUT STD_LOGIC;
+      isCallOrInt : OUT STD_LOGIC;
+      store_or_load_Flags : OUT STD_LOGIC; -- for INT, RTI 
       aluOp : OUT STD_LOGIC_VECTOR(2 DOWNTO 0)
     );
   END COMPONENT;
@@ -102,7 +110,8 @@ ARCHITECTURE Behavioral OF ID_Stage IS
   SIGNAL rf_readData2 : STD_LOGIC_VECTOR(15 DOWNTO 0);
 
   -- signals for control unit
-  SIGNAL cu_opcode : STD_LOGIC_VECTOR(4 DOWNTO 0)
+  SIGNAL cu_opcode : STD_LOGIC_VECTOR(4 DOWNTO 0);
+  SIGNAL cu_lastBit : STD_LOGIC;
   SIGNAL cu_memRead : STD_LOGIC;
   SIGNAL cu_memWrite : STD_LOGIC;
   SIGNAL cu_memToReg : STD_LOGIC;
@@ -113,6 +122,15 @@ ARCHITECTURE Behavioral OF ID_Stage IS
   SIGNAL cu_useImm : STD_LOGIC;
   SIGNAL cu_isCall : STD_LOGIC;
   SIGNAL cu_pcWrite : STD_LOGIC;
+
+  SIGNAL cu_isJz : STD_LOGIC;
+  SIGNAL cu_isJn : STD_LOGIC;
+  SIGNAL cu_isJc : STD_LOGIC;
+  SIGNAL cu_isRetOrRti2 : STD_LOGIC;
+  SIGNAL cu_isRet : STD_LOGIC;
+  SIGNAL cu_isCallOrInt : STD_LOGIC;
+  SIGNAL cu_store_or_load_Flags : STD_LOGIC;
+
   SIGNAL cu_aluOp : STD_LOGIC_VECTOR(2 DOWNTO 0);
 
   -- signals does not include in some component
@@ -121,10 +139,10 @@ BEGIN
 
   -- Concurrent Assignments
   cu_opcode <= inst(15 DOWNTO 11);
+  cu_lastBit <= inst(0);
   rf_readReg1 <= inst(10 DOWNTO 8);
   rf_readReg2 <= inst(7 DOWNTO 5);
   d_Rdst <= inst(4 DOWNTO 2);
-
   -- Register File Instantiation
   regFile : RegisterFile
   PORT MAP(
@@ -143,6 +161,7 @@ BEGIN
   ctrlUnit : ControlUnit
   PORT MAP(
     opcode => cu_opcode,
+    lastBit => cu_lastBit,
     memRead => cu_memRead,
     memWrite => cu_memWrite,
     memToReg => cu_memToReg,
@@ -153,6 +172,14 @@ BEGIN
     useImm => cu_useImm,
     isCall => cu_isCall,
     pcWrite => cu_pcWrite,
+
+    isJz => cu_isJz,
+    isJn => cu_isJn,
+    isJc => cu_isJc,
+    isRetOrRti2 => cu_isRetOrRti2,
+    isRet => cu_isRet,
+    isCallOrInt => cu_isCallOrInt,
+    store_or_load_Flags => cu_store_or_load_Flags,
     aluOp => cu_aluOp
   );
 

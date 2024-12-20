@@ -4,7 +4,7 @@
 
 -- output : newPc
 
-LIBRARY library IEEE;
+LIBRARY IEEE;
 USE IEEE.std_logic_1164.ALL;
 USE IEEE.numeric_std.ALL;
 
@@ -17,6 +17,8 @@ ENTITY PrioritySelector IS
     isBranch : IN STD_LOGIC;
     isJump : IN STD_LOGIC;
 
+    -- isInt1OrRti1 : IN STD_LOGIC; 
+
     -- input addresses
     jumpAddress : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
     nextSequentialAddress : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
@@ -24,6 +26,8 @@ ENTITY PrioritySelector IS
     exceptionAddress : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
     returnAddress : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
     interruptAddress : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
+
+    -- newInterruptOrReturn : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
 
     -- output
     selectedAddress : OUT STD_LOGIC_VECTOR(15 DOWNTO 0)
@@ -37,6 +41,7 @@ BEGIN
     interruptAddress WHEN isInterrupt = '1' ELSE
     returnAddress WHEN isReturn = '1' ELSE
     branchAddress WHEN isBranch = '1' ELSE
+    -- newInterruptOrReturn WHEN isInt1OrRti1 = '1' ELSE
     jumpAddress WHEN isJump = '1' ELSE
     nextSequentialAddress;
 END Behavioral;
