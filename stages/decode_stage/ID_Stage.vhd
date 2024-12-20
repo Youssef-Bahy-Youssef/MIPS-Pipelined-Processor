@@ -13,14 +13,20 @@ ENTITY ID_Stage IS
     pc : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
     inst : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
 
-    id_ex_flush : IN STD_LOGIC; --
-
     -- for Hazard Detection Unit
     id_ex_memRead : IN STD_LOGIC;
     id_ex_Rdst : IN STD_LOGIC;
     if_id_write : OUT STD_LOGIC;
     pcWrite : OUT STD_LOGIC;
     control : OUT STD_LOGIC;
+
+    -- Inputs for ID_Flush_Mux
+    id_ex_isRetOrRti2 : IN STD_LOGIC;
+    branch : IN STD_LOGIC;
+    id_ex_useImm : IN STD_LOGIC;
+    ex_mem_isRet : IN STD_LOGIC;
+    isException : IN STD_LOGIC;
+    hdu_control : IN STD_LOGIC;
 
     -- outputs
     pcOut : OUT STD_LOGIC_VECTOR(15 DOWNTO 0);
@@ -30,6 +36,7 @@ ENTITY ID_Stage IS
     Rsrc1 : OUT STD_LOGIC_VECTOR(2 DOWNTO 0);
     Rsrc2 : OUT STD_LOGIC_VECTOR(2 DOWNTO 0);
     Rdst : OUT STD_LOGIC_VECTOR(2 DOWNTO 0);
+    if_id_flush : OUT STD_LOGIC;
 
     -- control signals outputs
     memRead : OUT STD_LOGIC;
@@ -43,6 +50,14 @@ ENTITY ID_Stage IS
     isCall : OUT STD_LOGIC;
     pcWrite : OUT STD_LOGIC;
     aluOp : OUT STD_LOGIC_VECTOR(2 DOWNTO 0);
+
+    isJz : OUT STD_LOGIC;
+    isJn : OUT STD_LOGIC;
+    isJc : OUT STD_LOGIC;
+    isRetOrRti2 : OUT STD_LOGIC;
+    isRet : OUT STD_LOGIC;
+    isCallOrInt : OUT STD_LOGIC;
+    store_or_load_Flags : OUT STD_LOGIC -- for INT, RTI 
   );
 END ID_Stage;
 
@@ -65,7 +80,7 @@ ARCHITECTURE Behavioral OF ID_Stage IS
 
   COMPONENT ControlUnit IS
     PORT (
-      opcode : IN STD_LOGIC_VECTOR(4 DOWNTO 0)
+      opcode : IN STD_LOGIC_VECTOR(4 DOWNTO 0);
       lastBit : IN STD_LOGIC;
 
       memRead : OUT STD_LOGIC;
@@ -102,12 +117,29 @@ ARCHITECTURE Behavioral OF ID_Stage IS
       pcWrite : OUT STD_LOGIC;
     );
   END COMPONENT;
+
+  COMPONENT ID_Flush_Mux IS
+    PORT (
+      id_ex_isRetOrRti2 : IN STD_LOGIC;
+      branch : IN STD_LOGIC;
+      id_ex_useImm : IN STD_LOGIC;
+      ex_mem_isRet : IN STD_LOGIC;
+      isException : IN STD_LOGIC;
+      hdu_control : IN STD_LOGIC;
+
+      if_id_flush : OUT STD_LOGIC;
+      id_ex_flush : OUT STD_LOGIC
+    );
+  END COMPONENT;
   -- add signals
 
   SIGNAL rf_readReg1 : STD_LOGIC_VECTOR(2 DOWNTO 0);
   SIGNAL rf_readReg2 : STD_LOGIC_VECTOR(2 DOWNTO 0);
   SIGNAL rf_readData1 : STD_LOGIC_VECTOR(15 DOWNTO 0);
   SIGNAL rf_readData2 : STD_LOGIC_VECTOR(15 DOWNTO 0);
+
+  -- signals for flush
+  SIGNAL id_ex_flush : STD_LOGIC;
 
   -- signals for control unit
   SIGNAL cu_opcode : STD_LOGIC_VECTOR(4 DOWNTO 0);
@@ -195,9 +227,24 @@ BEGIN
     pcWrite => pcWrite
   );
 
+  -- ID_Flush_Mux Instantiation
+  ID_Flush_Mux_inst : ID_Flush_Mux
+  PORT MAP(
+    id_ex_isRetOrRti2 => id_ex_isRetOrRti2,
+    branch => branch,
+    id_ex_useImm => id_ex_useImm,
+    ex_mem_isRet => ex_mem_isRet,
+    isException => isException,
+    hdu_control => hdu_control,
+
+    if_id_flush => if_id_flush,
+    id_ex_flush => id_ex_flush
+  );
+
   -- General Outputs
   pcOut <= pc;
-  nextPcOut <= pc + 1;
+  -- nextPcOut <= pc + 1;
+  nextPcOut <= STD_LOGIC_VECTOR(unsigned(pc) + 1);
   readData1 <= rf_readData1;
   readData2 <= rf_readData2;
   Rsrc1 <= rf_readReg1;
@@ -217,8 +264,17 @@ BEGIN
       useSp <= '0';
       useImm <= '0';
       isCall <= '0';
-      pcWrite <= '1';
+      -- pcWrite <= '1';
       aluOp <= '0';
+
+      isJz <= '0';
+      isJn <= '0';
+      isJc <= '0';
+      isRetOrRti2 <= '0';
+      isRet <= '0';
+      isCallOrInt <= '1';
+      store_or_load_Flags <= '0';
+
     ELSE
       memRead <= cu_memRead;
       memWrite <= cu_memWrite;
@@ -231,6 +287,14 @@ BEGIN
       isCall <= cu_isCall;
       pcWrite <= cu_pcWrite;
       aluOp <= cu_aluOp;
+
+      isJz <= cu_isJz;
+      isJn <= cu_isJn;
+      isJc <= cu_isJc;
+      isRetOrRti2 <= cu_isRetOrRti2;
+      isRet <= cu_isRet;
+      isCallOrInt <= cu_isCallOrInt;
+      store_or_load_Flags <= cu_store_or_load_Flags;
     END IF;
   END PROCESS;
 END Behavioral;
