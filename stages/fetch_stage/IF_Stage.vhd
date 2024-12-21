@@ -36,13 +36,20 @@ ENTITY IF_Stage IS
     -- * Inputs for Instruction Memory (NOT FOUND)
     -- * Inputs for Flush Signal
     cu_isJump : IN STD_LOGIC;
-    isException : IN STD_LOGIC;
     branch_flush : IN STD_LOGIC;
     hdu_flush : IN STD_LOGIC;
 
     -- outputs
     inst : OUT STD_LOGIC_VECTOR(15 DOWNTO 0);
-    pc : OUT STD_LOGIC_VECTOR(15 DOWNTO 0)
+    pc : OUT STD_LOGIC_VECTOR(15 DOWNTO 0);
+
+    debug_interruptAddress : OUT STD_LOGIC_VECTOR(15 DOWNTO 0);
+    debug_ID_Toggled_inst : OUT STD_LOGIC_VECTOR(15 DOWNTO 0);
+    debug_pcOut : OUT STD_LOGIC_VECTOR(15 DOWNTO 0);
+    debug_selectedAddress : OUT STD_LOGIC_VECTOR(15 DOWNTO 0);
+    debug_pc_stop : OUT STD_LOGIC;
+    debug_flush : OUT STD_LOGIC;
+    debug_instMemOutput : OUT STD_LOGIC_VECTOR(15 DOWNTO 0)
   );
 END IF_Stage;
 ARCHITECTURE Behavioral OF IF_Stage IS
@@ -56,7 +63,7 @@ ARCHITECTURE Behavioral OF IF_Stage IS
       isInterrupt : IN STD_LOGIC;
       isBranch : IN STD_LOGIC;
       isJump : IN STD_LOGIC;
-
+      rst : IN STD_LOGIC;
       -- input addresses
       jumpAddress : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
       nextSequentialAddress : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
@@ -64,6 +71,7 @@ ARCHITECTURE Behavioral OF IF_Stage IS
       exceptionAddress : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
       returnAddress : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
       interruptAddress : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
+      IM_0 : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
 
       -- output
       selectedAddress : OUT STD_LOGIC_VECTOR(15 DOWNTO 0)
@@ -79,7 +87,7 @@ ARCHITECTURE Behavioral OF IF_Stage IS
       isInt1OrRti1 : IN STD_LOGIC;
       pcIn : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
 
-      pcOut : OUT STD_LOGIC_VECTOR(15 DOWNTO 0);
+      pcOut : OUT STD_LOGIC_VECTOR(15 DOWNTO 0)
     );
   END COMPONENT;
 
@@ -105,7 +113,7 @@ ARCHITECTURE Behavioral OF IF_Stage IS
       branch_flush : IN STD_LOGIC;
       hdu_flush : IN STD_LOGIC;
 
-      out_flush : OUT STD_LOGIC;
+      out_flush : OUT STD_LOGIC
     );
   END COMPONENT;
 
@@ -116,7 +124,7 @@ ARCHITECTURE Behavioral OF IF_Stage IS
 
       out1 : OUT STD_LOGIC;
       out2 : OUT STD_LOGIC;
-      newInst : OUT STD_LOGIC_VECTOR(15 DOWNTO 0);
+      newInst : OUT STD_LOGIC_VECTOR(15 DOWNTO 0)
     );
   END COMPONENT;
 
@@ -128,7 +136,7 @@ ARCHITECTURE Behavioral OF IF_Stage IS
       int2_rti2_instruction : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
       memory_output : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
 
-      inst_out : OUT STD_LOGIC_VECTOR(15 DOWNTO 0);
+      inst_out : OUT STD_LOGIC_VECTOR(15 DOWNTO 0)
     );
   END COMPONENT;
   -- * Signals for Priority Selector
@@ -157,15 +165,25 @@ ARCHITECTURE Behavioral OF IF_Stage IS
   SIGNAL pc_stop : STD_LOGIC;
   SIGNAL flush : STD_LOGIC;
 
+  SIGNAL nextSequentialAddress : STD_LOGIC_VECTOR(15 DOWNTO 0);
 BEGIN
+
+  debug_interruptAddress <= interruptAddress;
+  debug_selectedAddress <= selectedAddress;
+  debug_ID_Toggled_inst <= ID_Toggled_inst;
+  debug_pcOut <= pcOut;
+  debug_instMemOutput <= IM_Out;
+  debug_flush <= flush;
+  debug_pc_stop <= pc_stop;
+
   -- concurrent assignments
   -- * Priority Selector
   exceptionAddress <=
     IM_2 WHEN cause = '1' ELSE
     IM_4;
-  nextSequentialAddress <= pcOut + 1;
-  interruptAddress <= IM_6 + index;
-  index <= inst(10 DOWNTO 0);
+  nextSequentialAddress <= STD_LOGIC_VECTOR(to_unsigned(to_integer(unsigned(pcOut)) + 1, 16));
+  interruptAddress <= STD_LOGIC_VECTOR(to_unsigned(to_integer(unsigned(IM_Out)) + to_integer(unsigned(index)), 16));
+  index <= ID_inst(10 DOWNTO 0);
   isInterrupt <= isInt2OrRti2;
   -- * Program Counter
   -- * Interrupt and Return (RTI) handler
@@ -183,7 +201,8 @@ BEGIN
     isInterrupt => isInterrupt,
     isBranch => isBranch,
     isJump => isJump,
-
+    rst => rst,
+    IM_0 => IM_0,
     -- Input addresses
     jumpAddress => jumpAddress,
     nextSequentialAddress => pcOut,

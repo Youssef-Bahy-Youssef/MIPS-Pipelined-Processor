@@ -10,7 +10,7 @@ ENTITY ProgramCounter IS
     isInt1OrRti1 : IN STD_LOGIC;
     pcIn : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
 
-    pcOut : OUT STD_LOGIC_VECTOR(15 DOWNTO 0);
+    pcOut : OUT STD_LOGIC_VECTOR(15 DOWNTO 0)
   );
 END ProgramCounter;
 
@@ -19,10 +19,10 @@ ARCHITECTURE Behavioral OF ProgramCounter IS
   SIGNAL rstIm : STD_LOGIC_VECTOR(15 DOWNTO 0) := x"0000";
 
 BEGIN
-  PROCESS (clk, rst, isInterrupt)
+  PROCESS (clk, rst)
   BEGIN
     IF rst = '1' THEN
-      pcOut <= rstIm;
+      pcOut <= pcIn;
     ELSIF (rising_edge(clk) AND pcWrite = '1' AND isInt1OrRti1 = '0') THEN
       pcOut <= pcIn;
     END IF;

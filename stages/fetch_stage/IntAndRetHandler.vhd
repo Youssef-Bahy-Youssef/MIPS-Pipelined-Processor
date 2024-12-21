@@ -8,7 +8,7 @@ ENTITY IntAndRetHandler IS
 
     out1 : OUT STD_LOGIC;
     out2 : OUT STD_LOGIC;
-    newInst : OUT STD_LOGIC_VECTOR(15 DOWNTO 0);
+    newInst : OUT STD_LOGIC_VECTOR(15 DOWNTO 0)
   );
 END IntAndRetHandler;
 
@@ -22,7 +22,7 @@ ARCHITECTURE Behavioral OF IntAndRetHandler IS
   CONSTANT RTI_OPCODE : STD_LOGIC_VECTOR(4 DOWNTO 0) := "11111";
 
 BEGIN
-  newInst <= inst(15 DOWNTO 1) AND NOT inst(0);
+  newInst <= inst(15 DOWNTO 1) & NOT inst(0);
   PROCESS (inst)
   BEGIN
     CASE inst(15 DOWNTO 11) IS

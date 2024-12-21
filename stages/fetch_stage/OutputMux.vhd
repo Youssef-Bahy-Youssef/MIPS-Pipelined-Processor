@@ -9,11 +9,11 @@ ENTITY OutputMux IS
     int2_rti2_instruction : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
     memory_output : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
 
-    inst_out : OUT STD_LOGIC_VECTOR(15 DOWNTO 0);
+    inst_out : OUT STD_LOGIC_VECTOR(15 DOWNTO 0)
   );
 END OutputMux;
 
-ARCHITECTURE Behavioral OF ent IS
+ARCHITECTURE Behavioral OF OutputMux IS
 
   CONSTANT NOP : STD_LOGIC_VECTOR(15 DOWNTO 0) := "0000000000000000";
 

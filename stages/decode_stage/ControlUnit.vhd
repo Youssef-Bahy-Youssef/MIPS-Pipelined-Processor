@@ -4,7 +4,7 @@ USE IEEE.numeric_std.ALL;
 
 ENTITY ControlUnit IS
   PORT (
-    opcode : IN STD_LOGIC_VECTOR(4 DOWNTO 0)
+    opcode : IN STD_LOGIC_VECTOR(4 DOWNTO 0);
     lastBit : IN STD_LOGIC;
 
     memRead : OUT STD_LOGIC;
@@ -36,8 +36,6 @@ ENTITY ControlUnit IS
 END ControlUnit;
 
 ARCHITECTURE Behavioral OF ControlUnit IS
-
-  SIGNAL
 
 BEGIN
   PROCESS (opcode)
@@ -93,55 +91,55 @@ BEGIN
         aluOp <= "011";
 
         -- OUT (Output)
-      WHEN "00110"
+      WHEN "00110" =>
         pcWrite <= '1';
         aluOp <= "100";
 
         -- IN (Input)
-      WHEN "00111"
+      WHEN "00111" =>
         regWrite <= '1';
         pcWrite <= '1';
         aluOp <= "100";
 
         -- MOV (mov)
-      WHEN "01000"
+      WHEN "01000" =>
         regWrite <= '1';
         pcWrite <= '1';
         aluOp <= "100";
 
         -- ADD (add)
-      WHEN "01001"
+      WHEN "01001" =>
         regWrite <= '1';
         pcWrite <= '1';
         aluOp <= "101";
 
         -- SUB (subtract)
-      WHEN "01010"
+      WHEN "01010" =>
         regWrite <= '1';
         pcWrite <= '1';
         aluOp <= "110";
 
         -- AND (logical and)
-      WHEN "01011"
+      WHEN "01011" =>
         regWrite <= '1';
         pcWrite <= '1';
         aluOp <= "111";
 
         -- IADD (immediate add)
-      WHEN "01100"
+      WHEN "01100" =>
         regWrite <= '1';
         pcWrite <= '1';
         aluOp <= "101";
 
         -- PUSH (push)
-      WHEN "01101"
+      WHEN "01101" =>
         memWrite <= '1';
         spWrite <= '1';
         pcWrite <= '1';
         aluOp <= "100";
 
         -- POP (pop)
-      WHEN "10000"
+      WHEN "10000" =>
         memRead <= '1';
         memToReg <= '1';
         regWrite <= '1';
@@ -151,13 +149,13 @@ BEGIN
         aluOp <= "011";
 
         -- LDM (load immediate value)
-      WHEN "10001"
+      WHEN "10001" =>
         regWrite <= '1';
         pcWrite <= '1';
         aluOp <= "100";
 
         -- LDD (load value from memory)
-      WHEN "10010"
+      WHEN "10010" =>
         memRead <= '1';
         memToReg <= '1';
         regWrite <= '1';
@@ -165,32 +163,32 @@ BEGIN
         aluOp <= "101";
 
         -- STD (Store value to memory)
-      WHEN "10011"
+      WHEN "10011" =>
         memWrite <= '1';
         pcWrite <= '1';
         aluOp <= "101";
 
         -- JZ (jump if zero)
-      WHEN "11000"
+      WHEN "11000" =>
         pcWrite <= '1';
         isJz <= '1';
 
         -- JN (jump if negative)
-      WHEN "11001"
+      WHEN "11001" =>
         pcWrite <= '1';
         isJn <= '1';
 
         -- JC (jump if carry)
-      WHEN "11010"
+      WHEN "11010" =>
         pcWrite <= '1';
         isJc <= '1';
 
         -- JMP (jump)
-      WHEN "11011"
+      WHEN "11011" =>
         pcWrite <= '1';
 
         -- CALL (call)
-      WHEN "11100"
+      WHEN "11100" =>
         memWrite <= '1';
         spWrite <= '1';
         pcWrite <= '1';
@@ -198,7 +196,7 @@ BEGIN
         aluOp <= "100";
 
         -- RET (return)
-      WHEN "11110"
+      WHEN "11110" =>
         memRead <= '1';
         memToReg <= '1';
         spWrite <= '1';
@@ -210,14 +208,14 @@ BEGIN
         ------------------------------------------------------
 
         -- INT (interrupt)
-      WHEN "11101"
+      WHEN "11101" =>
         regWrite <= '1';
         pcWrite <= '1';
         isCallOrInt <= "1";
         aluOp <= "101";
 
         -- RTI (return)
-      WHEN "11111"
+      WHEN "11111" =>
         regWrite <= '1';
         pcWrite <= '1';
         aluOp <= "101";

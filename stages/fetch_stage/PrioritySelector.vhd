@@ -16,7 +16,7 @@ ENTITY PrioritySelector IS
     isInterrupt : IN STD_LOGIC;
     isBranch : IN STD_LOGIC;
     isJump : IN STD_LOGIC;
-
+    rst : IN STD_LOGIC;
     -- isInt1OrRti1 : IN STD_LOGIC; 
 
     -- input addresses
@@ -26,6 +26,7 @@ ENTITY PrioritySelector IS
     exceptionAddress : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
     returnAddress : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
     interruptAddress : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
+    IM_0 : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
 
     -- newInterruptOrReturn : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
 
@@ -37,6 +38,7 @@ ARCHITECTURE Behavioral OF PrioritySelector IS
 
 BEGIN
   selectedAddress <=
+    IM_0 WHEN rst = '1' ELSE
     exceptionAddress WHEN isException = '1' ELSE
     interruptAddress WHEN isInterrupt = '1' ELSE
     returnAddress WHEN isReturn = '1' ELSE

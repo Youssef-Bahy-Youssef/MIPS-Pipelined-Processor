@@ -7,7 +7,7 @@ ENTITY ID_Stage IS
     -- inputs
     clk : IN STD_LOGIC;
     rst : IN STD_LOGIC;
-    regWrite : IN STD_LOGIC;
+    rf_regWrite : IN STD_LOGIC;
     writeReg : IN STD_LOGIC_VECTOR(2 DOWNTO 0);
     writeData : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
     pc : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
@@ -15,9 +15,8 @@ ENTITY ID_Stage IS
 
     -- for Hazard Detection Unit
     id_ex_memRead : IN STD_LOGIC;
-    id_ex_Rdst : IN STD_LOGIC;
+    id_ex_Rdst : IN STD_LOGIC_VECTOR(2 DOWNTO 0);
     if_id_write : OUT STD_LOGIC;
-    pcWrite : OUT STD_LOGIC;
     control : OUT STD_LOGIC;
 
     -- Inputs for ID_Flush_Mux
@@ -32,7 +31,7 @@ ENTITY ID_Stage IS
     pcOut : OUT STD_LOGIC_VECTOR(15 DOWNTO 0);
     nextPcOut : OUT STD_LOGIC_VECTOR(15 DOWNTO 0);
     readData1 : OUT STD_LOGIC_VECTOR(15 DOWNTO 0);
-    readData2 : OUT STD_LOGIC_VECTOR(15 DOWNTO 0)
+    readData2 : OUT STD_LOGIC_VECTOR(15 DOWNTO 0);
     Rsrc1 : OUT STD_LOGIC_VECTOR(2 DOWNTO 0);
     Rsrc2 : OUT STD_LOGIC_VECTOR(2 DOWNTO 0);
     Rdst : OUT STD_LOGIC_VECTOR(2 DOWNTO 0);
@@ -108,13 +107,13 @@ ARCHITECTURE Behavioral OF ID_Stage IS
   COMPONENT HazardDetectionUnit IS
     PORT (
       id_ex_memRead : IN STD_LOGIC;
-      id_ex_Rdst : IN STD_LOGIC;
-      if_id_Rsrc1 : IN STD_LOGIC;
-      if_id_Rsrc2 : IN STD_LOGIC;
+      id_ex_Rdst : IN STD_LOGIC_VECTOR(2 DOWNTO 0);
+      if_id_Rsrc1 : IN STD_LOGIC_VECTOR(2 DOWNTO 0);
+      if_id_Rsrc2 : IN STD_LOGIC_VECTOR(2 DOWNTO 0);
 
       if_id_write : OUT STD_LOGIC;
       control : OUT STD_LOGIC;
-      pcWrite : OUT STD_LOGIC;
+      pcWrite : OUT STD_LOGIC
     );
   END COMPONENT;
 
@@ -180,7 +179,7 @@ BEGIN
   PORT MAP(
     clk => clk,
     rst => rst,
-    regWrite => regWrite,
+    regWrite => rf_regWrite,
     readReg1 => rf_readReg1,
     readReg2 => rf_readReg2,
     writeReg => writeReg,
@@ -265,7 +264,7 @@ BEGIN
       useImm <= '0';
       isCall <= '0';
       -- pcWrite <= '1';
-      aluOp <= '0';
+      aluOp <= "00";
 
       isJz <= '0';
       isJn <= '0';
